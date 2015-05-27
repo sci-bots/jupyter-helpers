@@ -154,8 +154,21 @@ class SessionManager(object):
         self.sessions = OrderedDict()
         self.daemon = daemon
 
-    def launch_from_template(self, template_path, notebook_dir=None, overwrite=False,
-                             create_dir=False, no_browser=False, daemon=None):
+    def open(self, filepath=None, **kwargs):
+        if filepath is None:
+            notebook_dir = path(os.getcwd())
+            filename = None
+        else:
+            if not filepath.isfile():
+                raise IOError('Notebook file not found: %s' % filepath)
+            notebook_dir = path(filepath).abspath().parent
+            filename = filepath.name
+        session = self.get_session(notebook_dir, **kwargs)
+        session.open(filename)
+
+    def launch_from_template(self, template_path, notebook_dir=None,
+                             overwrite=False, create_dir=False,
+                             no_browser=False, **kwargs):
         '''
         Launch a copy of the specified `.ipynb` (template) file in an IPython
         notebook session for the specified notebook directory.
@@ -172,6 +185,7 @@ class SessionManager(object):
          - `notebook_dir`: Directory to start IPython notebook session in.
          - `overwrite`: Overwrite existing file in `notebook_dir`, if necessary.
          - `create_dir`: Create notebook directory, if necessary.
+         - `no_browser`: Do not launch new browser tab.
         '''
         template_path = template_path.abspath()
 
@@ -196,18 +210,48 @@ class SessionManager(object):
             template_path.copy(output_path)
             notebook_path = output_path
 
-        if notebook_dir in self.sessions and self.sessions[notebook_dir].is_alive():
-            # Notebook process is already running for notebook directory,
-            session = self.sessions[notebook_dir]
-        else:
-            # Notebook process is not running for notebook directory, so
-            # start new IPython notebook process.
-            session = Session(daemon=daemon if daemon is not None else
-                              self.daemon, notebook_dir=notebook_dir,
-                              no_browser=None)
-            session.start()
-            self.sessions[str(session.notebook_dir)] = session
+        session = self.get_session(notebook_dir=notebook_dir, **kwargs)
 
         if not no_browser:
             # Open IPython notebook in new browser tab.
             session.open(notebook_path.name)
+
+    def get_session(self, notebook_dir=None, no_browser=True, **kwargs):
+        '''
+        Return handle to IPython session for specified notebook directory.
+
+        If an IPython notebook session has already been launched for the
+        notebook directory, reuse it.  Otherwise, launch a new IPython notebook
+        session.
+
+        By default, notebook session is launched using current working
+        directory as the notebook directory.
+
+        Arguments
+        ---------
+
+         - `notebook_dir`: Directory to start IPython notebook session in.
+         - `no_browser`: Do not launch new browser tab.
+        '''
+        if notebook_dir in self.sessions and self.sessions[notebook_dir].is_alive():
+            # Notebook process is already running for notebook directory,
+            session = self.sessions[notebook_dir]
+            if 'daemon' in kwargs:
+                # Override `daemon` setting of existing session.
+                session.daemon = kwargs['daemon']
+            if not no_browser:
+                session.open()
+        else:
+            # Notebook process is not running for notebook directory, so
+            # start new IPython notebook process.
+
+            # Use default `daemon` setting for manager if no specified.
+            daemon = kwargs.pop('daemon', self.daemon)
+            if no_browser:
+                kwargs['no_browser'] = None
+            if notebook_dir is not None:
+                kwargs['notebook_dir'] = notebook_dir
+            session = Session(daemon=daemon, **kwargs)
+            session.start()
+            self.sessions[str(session.notebook_dir)] = session
+        return session
