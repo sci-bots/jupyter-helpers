@@ -169,8 +169,8 @@ class SessionManager(object):
         session.open(filename)
 
     def launch_from_template(self, template_path, notebook_dir=None,
-                             overwrite=False, create_dir=False,
-                             no_browser=False, **kwargs):
+                             overwrite=False, output_name=None,
+                             create_dir=False, no_browser=False, **kwargs):
         '''
         Launch a copy of the specified `.ipynb` (template) file in an IPython
         notebook session for the specified notebook directory.
@@ -190,6 +190,8 @@ class SessionManager(object):
          - `no_browser`: Do not launch new browser tab.
         '''
         template_path = template_path.abspath()
+        if output_name is None:
+            output_name = template_path.name
 
         if notebook_dir is None:
             notebook_dir = path(os.getcwd())
@@ -201,7 +203,7 @@ class SessionManager(object):
                           'the template file.')
         else:
             # The parent of the template file is not the notebook directory.
-            output_path = notebook_dir.joinpath(template_path.name)
+            output_path = notebook_dir.joinpath(output_name)
             if output_path.isfile() and not overwrite:
                 # A file with the same name already exists in the root.
                 raise IOError('Notebook already exists with same name.')
