@@ -159,6 +159,7 @@ class SessionManager(object):
             notebook_dir = path(os.getcwd())
             filename = None
         else:
+            filepath = path(filepath)
             if not filepath.isfile():
                 raise IOError('Notebook file not found: %s' % filepath)
             notebook_dir = path(filepath).abspath().parent
