@@ -259,3 +259,10 @@ class SessionManager(object):
             session.start()
             self.sessions[str(session.notebook_dir)] = session
         return session
+
+    def stop(self):
+        for session in (self.sessions.values()):
+            session.stop()
+
+    def __del__(self):
+        self.stop()
