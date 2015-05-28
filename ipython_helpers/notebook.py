@@ -164,7 +164,8 @@ class SessionManager(object):
                 raise IOError('Notebook file not found: %s' % filepath)
             notebook_dir = path(filepath).abspath().parent
             filename = filepath.name
-        session = self.get_session(notebook_dir, **kwargs)
+        daemon = kwargs.pop('daemon', self.daemon)
+        session = self.get_session(notebook_dir, daemon=daemon, **kwargs)
         session.open(filename)
 
     def launch_from_template(self, template_path, notebook_dir=None,
