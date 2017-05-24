@@ -17,7 +17,7 @@ class Session(object):
     This class provides an API for launching an IPython notebook process
     (non-blocking).
     '''
-    def __init__(self, daemon=False, create_dir=False, timeout=5, **kwargs):
+    def __init__(self, daemon=False, create_dir=False, timeout=10, **kwargs):
         '''
         Arguments
         ---------
@@ -85,7 +85,7 @@ class Session(object):
         # Determine which port the notebook is running on.
         cre_address = re.compile(r'The \w+ Notebook is running at: '
                                  r'(?P<address>https?://.*?:'
-                                 r'(?P<port>\d+)[^\r]*/)\r?$')
+                                 r'(?P<port>\d+)[^\r]*)\r?$')
         cre_notebook_dir = re.compile(r'Serving notebooks from local '
                                       r'directory:\s+(?P<notebook_dir>[^\r]*)\r?$')
         match = None
