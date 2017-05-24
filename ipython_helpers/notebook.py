@@ -17,7 +17,7 @@ class Session(object):
     This class provides an API for launching an IPython notebook process
     (non-blocking).
     '''
-    def __init__(self, daemon=False, create_dir=False, timeout=5, **kwargs):
+    def __init__(self, daemon=False, create_dir=False, timeout=10, **kwargs):
         '''
         Arguments
         ---------
