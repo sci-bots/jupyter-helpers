@@ -15,7 +15,7 @@ setup(name='ipython-helpers',
       author='Christian Fobel',
       author_email='christian@fobel.net',
       url='https://github.com/cfobel/ipython-helpers',
-      license='LGPL-3.0',
+      license='BSD',
       install_requires=['IPython>=2.0', 'path_helpers>=0.2'],
       packages=['ipython_helpers'])
 
