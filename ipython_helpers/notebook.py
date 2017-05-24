@@ -17,18 +17,25 @@ class Session(object):
     This class provides an API for launching an IPython notebook process
     (non-blocking).
     '''
-    def __init__(self, daemon=False, create_dir=False, timeout=10, **kwargs):
+    def __init__(self, daemon=False, create_dir=False, timeout_s=10, **kwargs):
         '''
         Arguments
         ---------
+        daemon : bool, optional
+            Kill notebook process when `Session` object is deleted.
+        create_dir : bool, optional
+            Create the notebook directory, if necessary.
+        timeout_s : int or float, optional
+            Time to wait for notebook process to initialize (in seconds).
 
-         - `daemon`: Kill notebook process when `Session` object is deleted.
-         - `create_dir`: Create the notebook directory, if necessary.
+        See also
+        --------
+        SessionManager.get_session
         '''
         self.daemon = daemon
         if create_dir and 'notebook_dir' in kwargs:
             path(kwargs['notebook_dir']).makedirs_p()
-        self.timeout = timeout
+        self.timeout_s = timeout_s
         self.kwargs = kwargs
         self.process = None
         self.thread = None
@@ -92,8 +99,7 @@ class Session(object):
         self.stderr_lines = []
         start_time = time.time()
 
-        while (self.is_alive() and match is None
-               and time.time() - start_time < self.timeout):
+        while self.is_alive() and match is None:
             # read line without blocking
             try:
                 stderr_line = q.get_nowait()
@@ -105,6 +111,10 @@ class Session(object):
                 dir_match = cre_notebook_dir.search(stderr_line)
                 if dir_match:
                     self._notebook_dir = dir_match.group('notebook_dir')
+            if time.time() - start_time > self.timeout_s:
+                # Timeout has been exceeded.
+                raise RuntimeError('Timed out waiting for notebook process to '
+                                   'launch.')
 
         if match:
             # Notebook was started successfully.
@@ -117,8 +127,8 @@ class Session(object):
     @property
     def notebook_dir(self):
         if self._notebook_dir is None:
-            raise ValueError('Notebook directory not.  Is the notebook server '
-                             'running?')
+            raise ValueError('Notebook directory not set.  Is the notebook '
+                             'server running?')
         return path(self._notebook_dir)
 
     def resource_filename(self, filename):
@@ -129,6 +139,16 @@ class Session(object):
         Inspired by the [`resource_filename`][1] function of the
         [`pkg_resources`][2] package.
 
+        Parameters
+        ----------
+        filename : str
+            Path relative to notebook directory.
+
+        Returns
+        -------
+        path_helpers.path
+            Full path to resource within notebook directory based on the
+            specified relative path.
 
         [1]: https://pythonhosted.org/setuptools/pkg_resources.html#resource-extraction
         [2]: https://pythonhosted.org/setuptools/pkg_resources.html
@@ -137,7 +157,10 @@ class Session(object):
 
     def is_alive(self):
         '''
-        Return `True` if notebook process is running.
+        Returns
+        -------
+        bool
+            ``True`` if notebook process is running.
         '''
         return self.thread.is_alive()
 
@@ -147,6 +170,11 @@ class Session(object):
         notebook directory.
 
         If no filename is specified, open the root of the notebook server.
+
+        Parameters
+        ----------
+        filename : str
+            Notebook file path relative to notebook directory.
         '''
         if filename is None:
             address = self.address + 'tree'
@@ -177,15 +205,25 @@ class Session(object):
 class SessionManager(object):
     def __init__(self, daemon=True):
         '''
-        Arguments
-        ---------
-
-         - `daemon`: Kill notebook processes when `Session` object is deleted.
+        Parameters
+        ----------
+        daemon : bool, optional
+            If ``True``, kill notebook processes when ``Session`` object is
+            deleted.
         '''
         self.sessions = OrderedDict()
         self.daemon = daemon
 
     def open(self, filepath=None, **kwargs):
+        '''
+        Parameters
+        ----------
+        filepath : str, optional
+            Notebook file to open.
+
+            If no file path is specified, launch a notebook process in the
+            current working directory.
+        '''
         if filepath is None:
             notebook_dir = path(os.getcwd())
             filename = None
@@ -211,14 +249,19 @@ class SessionManager(object):
 
         If no notebook directory is specified, use the current working directory.
 
-        Arguments
-        ---------
-
-         - `template_path`: Path to template `.ipynb` file.
-         - `notebook_dir`: Directory to start IPython notebook session in.
-         - `overwrite`: Overwrite existing file in `notebook_dir`, if necessary.
-         - `create_dir`: Create notebook directory, if necessary.
-         - `no_browser`: Do not launch new browser tab.
+        Parameters
+        ----------
+        template_path : str
+            Path to template `.ipynb` file.
+        notebook_dir : str, optional
+            Directory to start IPython notebook session in.
+        overwrite : bool, optional
+            If ``True``, overwrite existing file in ``notebook_dir``, if
+            necessary.
+        create_dir : bool, optional
+            If ``True``, create notebook directory, if necessary.
+        no_browser : bool, optional
+            If ``True``, do not launch new browser tab.
         '''
         template_path = template_path.abspath()
         if output_name is None:
@@ -262,12 +305,23 @@ class SessionManager(object):
         By default, notebook session is launched using current working
         directory as the notebook directory.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
+        notebook_dir : str, optional
+            Directory to start IPython notebook session in.
+        no_browser : bool, optional
+            Do not launch new browser tab (default: ``True``).
+        **kwargs : dict
+            Additional arguments to pass along to ``Session`` constructor.
 
-         - `notebook_dir`: Directory to start IPython notebook session in.
-         - `no_browser`: Do not launch new browser tab.
-         - `timeout`: Time to wait for notebook process to initialize.
+        Returns
+        -------
+        Session
+            Handle to IPython session for specified notebook directory.
+
+        See Also
+        --------
+        :class:`Session`
         '''
         if notebook_dir in self.sessions and self.sessions[notebook_dir].is_alive():
             # Notebook process is already running for notebook directory,
