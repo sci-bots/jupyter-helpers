@@ -17,7 +17,7 @@ class Session(object):
     This class provides an API for launching an IPython notebook process
     (non-blocking).
     '''
-    def __init__(self, daemon=False, create_dir=False, **kwargs):
+    def __init__(self, daemon=False, create_dir=False, timeout=5, **kwargs):
         '''
         Arguments
         ---------
@@ -28,6 +28,7 @@ class Session(object):
         self.daemon = daemon
         if create_dir and 'notebook_dir' in kwargs:
             path(kwargs['notebook_dir']).makedirs_p()
+        self.timeout = timeout
         self.kwargs = kwargs
         self.process = None
         self.thread = None
@@ -60,9 +61,9 @@ class Session(object):
             raise ValueError('`stderr` must not be specified, since it must be'
                              ' monitored to determine which port the notebook '
                              'server is running on.')
+
         args_ = ('%s' % sys.executable, '-m', 'IPython', 'notebook') + self.args
         args_ = args_ + tuple(args)
-
 
         # Launch notebook as a subprocess and read stderr in a new thread.
         # See: https://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
@@ -90,10 +91,9 @@ class Session(object):
         match = None
         self.stderr_lines = []
         start_time = time.time()
-        timeout = 5 # seconds
 
         while (self.is_alive() and match is None
-               and time.time() - start_time < timeout):
+               and time.time() - start_time < self.timeout):
             # read line without blocking
             try:
                 stderr_line = q.get_nowait()
@@ -267,6 +267,7 @@ class SessionManager(object):
 
          - `notebook_dir`: Directory to start IPython notebook session in.
          - `no_browser`: Do not launch new browser tab.
+         - `timeout`: Time to wait for notebook process to initialize.
         '''
         if notebook_dir in self.sessions and self.sessions[notebook_dir].is_alive():
             # Notebook process is already running for notebook directory,
