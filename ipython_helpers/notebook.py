@@ -1,13 +1,13 @@
 # coding: utf-8
+from Queue import Queue, Empty
 from collections import OrderedDict
-import webbrowser
 from subprocess import Popen, PIPE
 from threading import Thread
-from Queue import Queue, Empty
-import sys
 import os
 import re
+import sys
 import time
+import webbrowser
 
 from path_helpers import path
 
