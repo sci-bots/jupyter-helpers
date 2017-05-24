@@ -2,9 +2,12 @@
 from collections import OrderedDict
 import webbrowser
 from subprocess import Popen, PIPE
+from threading import Thread
+from Queue import Queue, Empty
 import sys
 import os
 import re
+import time
 
 from path_helpers import path
 
@@ -14,7 +17,7 @@ class Session(object):
     This class provides an API for launching an IPython notebook process
     (non-blocking).
     '''
-    def __init__(self, daemon=False, create_dir=False, **kwargs):
+    def __init__(self, daemon=False, create_dir=False, timeout=5, **kwargs):
         '''
         Arguments
         ---------
@@ -25,8 +28,10 @@ class Session(object):
         self.daemon = daemon
         if create_dir and 'notebook_dir' in kwargs:
             path(kwargs['notebook_dir']).makedirs_p()
+        self.timeout = timeout
         self.kwargs = kwargs
         self.process = None
+        self.thread = None
         self.stderr_lines = []
         self.port = None
         self.address = None
@@ -56,9 +61,25 @@ class Session(object):
             raise ValueError('`stderr` must not be specified, since it must be'
                              ' monitored to determine which port the notebook '
                              'server is running on.')
+
         args_ = ('%s' % sys.executable, '-m', 'IPython', 'notebook') + self.args
         args_ = args_ + tuple(args)
-        self.process = Popen(args_, stderr=PIPE, **kwargs)
+
+        # Launch notebook as a subprocess and read stderr in a new thread.
+        # See: https://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
+
+        ON_POSIX = 'posix' in sys.builtin_module_names
+
+        def enqueue_output(out, queue):
+            for line in iter(out.readline, b''):
+                queue.put(line)
+            out.close()
+
+        self.process = Popen(args_, stderr=PIPE, bufsize=1, close_fds=ON_POSIX, **kwargs)
+        q = Queue()
+        self.thread = Thread(target=enqueue_output, args=(self.process.stderr, q))
+        self.thread.daemon = self.daemon # thread dies with the program
+        self.thread.start()
         self._notebook_dir = os.getcwd()
 
         # Determine which port the notebook is running on.
@@ -69,20 +90,28 @@ class Session(object):
                                       r'directory:\s+(?P<notebook_dir>[^\r]*)\r?$')
         match = None
         self.stderr_lines = []
+        start_time = time.time()
 
-        while not self.process.poll() and match is None:
-            stderr_line = self.process.stderr.readline()
-            self.stderr_lines.append(stderr_line)
-            match = cre_address.search(stderr_line)
-            dir_match = cre_notebook_dir.search(stderr_line)
-            if dir_match:
-                self._notebook_dir = dir_match.group('notebook_dir')
+        while (self.is_alive() and match is None
+               and time.time() - start_time < self.timeout):
+            # read line without blocking
+            try:
+                stderr_line = q.get_nowait()
+            except Empty:
+                pass
+            else: # got line
+                self.stderr_lines.append(stderr_line)
+                match = cre_address.search(stderr_line)
+                dir_match = cre_notebook_dir.search(stderr_line)
+                if dir_match:
+                    self._notebook_dir = dir_match.group('notebook_dir')
 
         if match:
             # Notebook was started successfully.
             self.address = match.group('address')
             self.port = int(match.group('port'))
         else:
+            self.stop()
             raise IOError(''.join(self.stderr_lines))
 
     @property
@@ -110,7 +139,7 @@ class Session(object):
         '''
         Return `True` if notebook process is running.
         '''
-        return (self.process is not None) and (self.process.poll() is None)
+        return self.thread.is_alive()
 
     def open(self, filename=None):
         '''
@@ -135,6 +164,8 @@ class Session(object):
         '''
         if self.daemon and self.process is not None:
             self.process.kill()
+            self.process = None
+            self.thread = None
 
     def __del__(self):
         try:
@@ -236,6 +267,7 @@ class SessionManager(object):
 
          - `notebook_dir`: Directory to start IPython notebook session in.
          - `no_browser`: Do not launch new browser tab.
+         - `timeout`: Time to wait for notebook process to initialize.
         '''
         if notebook_dir in self.sessions and self.sessions[notebook_dir].is_alive():
             # Notebook process is already running for notebook directory,
