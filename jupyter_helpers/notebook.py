@@ -41,6 +41,7 @@ class Session(object):
         self.thread = None
         self.stderr_lines = []
         self.port = None
+        self.token = None
         self.address = None
         self._notebook_dir = None
 
@@ -92,7 +93,7 @@ class Session(object):
         # Determine which port the notebook is running on.
         cre_address = re.compile(r'The \w+ Notebook is running at: '
                                  r'(?P<address>https?://.*?:'
-                                 r'(?P<port>\d+)[^\r]*)\r?$')
+                                 r'(?P<port>\d+)/)\?token=(?P<token>[a-z0-9]+)\r?$')
         cre_notebook_dir = re.compile(r'Serving notebooks from local '
                                       r'directory:\s+(?P<notebook_dir>[^\r]*)\r?$')
         match = None
@@ -120,6 +121,7 @@ class Session(object):
             # Notebook was started successfully.
             self.address = match.group('address')
             self.port = int(match.group('port'))
+            self.token = match.group('token')
         else:
             self.stop()
             raise IOError(''.join(self.stderr_lines))
@@ -188,7 +190,7 @@ class Session(object):
                 raise IOError('Notebook path not found: %s' % notebook_path)
             else:
                 address = '%snotebooks/%s' % (self.address, filename)
-        webbrowser.open_new_tab(address)
+        webbrowser.open_new_tab(address + '?token=' + self.token)
 
     def stop(self):
         '''
