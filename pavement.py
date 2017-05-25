@@ -14,7 +14,7 @@ setup(name='ipython-helpers',
       version=version.getVersion(),
       author='Christian Fobel',
       author_email='christian@fobel.net',
-      url='https://github.com/wheeler-microfluidics/ipython-helpers',
+      url='https://github.com/sci-bots/ipython-helpers',
       license='BSD',
       install_requires=['notebook', 'IPython>=2.0', 'path_helpers>=0.2'],
       packages=['ipython_helpers'])
