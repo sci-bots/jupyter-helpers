@@ -264,6 +264,8 @@ class SessionManager(object):
         overwrite : bool, optional
             If ``True``, overwrite existing file in ``notebook_dir``, if
             necessary.
+        output_name : str, optional
+            Name of notebook file (defaults to the name as the template file).
         create_dir : bool, optional
             If ``True``, create notebook directory, if necessary.
         no_browser : bool, optional
