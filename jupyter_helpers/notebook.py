@@ -162,7 +162,11 @@ class Session(object):
         bool
             ``True`` if notebook process is running.
         '''
-        return self.thread.is_alive()
+        if self.thread:
+            return self.thread.is_alive()
+        else:
+            return False
+
 
     def open(self, filename=None):
         '''
