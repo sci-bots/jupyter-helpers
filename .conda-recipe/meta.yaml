@@ -1,5 +1,5 @@
 package:
-  name: ipython-helpers
+  name: jupyter-helpers
 {% if GIT_DESCRIBE_NUMBER > '0' %}
   version: {{ GIT_DESCRIBE_TAG[1:] }}+{{ GIT_DESCRIBE_NUMBER }}
 {% else %}
@@ -13,14 +13,14 @@ build:
 
 requirements:
   build:
-    - ipython >=2.0
+    - jupyter
     - notebook
     - path_helpers >=0.2
     - paver
     - python
 
   run:
-    - ipython >=2.0
+    - jupyter
     - notebook
     - path_helpers >=0.2
     - python

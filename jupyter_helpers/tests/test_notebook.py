@@ -1,4 +1,4 @@
-from ipython_helpers import notebook
+from jupyter_helpers import notebook
 
 def test_get_session():
     sm = notebook.SessionManager()

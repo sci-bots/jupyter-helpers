@@ -10,14 +10,14 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import version
 
 
-setup(name='ipython-helpers',
+setup(name='jupyter-helpers',
       version=version.getVersion(),
       author='Christian Fobel',
       author_email='christian@fobel.net',
-      url='https://github.com/sci-bots/ipython-helpers',
+      url='https://github.com/sci-bots/jupyter-helpers',
       license='BSD',
-      install_requires=['notebook', 'IPython>=2.0', 'path_helpers>=0.2'],
-      packages=['ipython_helpers'])
+      install_requires=['notebook', 'jupyter', 'path_helpers>=0.2'],
+      packages=['jupyter_helpers'])
 
 @task
 def nosetests():

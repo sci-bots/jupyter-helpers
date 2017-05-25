@@ -14,7 +14,7 @@ from path_helpers import path
 
 class Session(object):
     '''
-    This class provides an API for launching an IPython notebook process
+    This class provides an API for launching a Jupyter notebook process
     (non-blocking).
     '''
     def __init__(self, daemon=False, create_dir=False, timeout_s=10, **kwargs):
@@ -57,7 +57,7 @@ class Session(object):
 
     def start(self, *args, **kwargs):
         '''
-        Launch IPython notebook server in background process.
+        Launch Jupyter notebook server in background process.
 
         Arguments and keyword arguments are passed on to `Popen` call.
 
@@ -69,7 +69,7 @@ class Session(object):
                              ' monitored to determine which port the notebook '
                              'server is running on.')
 
-        args_ = ('%s' % sys.executable, '-m', 'IPython', 'notebook') + self.args
+        args_ = ('%s' % sys.executable, '-m', 'jupyter', 'notebook') + self.args
         args_ = args_ + tuple(args)
 
         # Launch notebook as a subprocess and read stderr in a new thread.
@@ -241,10 +241,10 @@ class SessionManager(object):
                              overwrite=False, output_name=None,
                              create_dir=False, no_browser=False, **kwargs):
         '''
-        Launch a copy of the specified `.ipynb` (template) file in an IPython
+        Launch a copy of the specified `.ipynb` (template) file in a Jupyter 
         notebook session for the specified notebook directory.
 
-        If an IPython notebook session has already been launched for the
+        If a Jupyter notebook session has already been launched for the
         notebook directory, reuse it.
 
         If no notebook directory is specified, use the current working directory.
@@ -254,7 +254,7 @@ class SessionManager(object):
         template_path : str
             Path to template `.ipynb` file.
         notebook_dir : str, optional
-            Directory to start IPython notebook session in.
+            Directory to start Jupyter notebook session in.
         overwrite : bool, optional
             If ``True``, overwrite existing file in ``notebook_dir``, if
             necessary.
@@ -291,15 +291,15 @@ class SessionManager(object):
         session = self.get_session(notebook_dir=notebook_dir, **kwargs)
 
         if not no_browser:
-            # Open IPython notebook in new browser tab.
+            # Open Jupyter notebook in new browser tab.
             session.open(notebook_path.name)
 
     def get_session(self, notebook_dir=None, no_browser=True, **kwargs):
         '''
-        Return handle to IPython session for specified notebook directory.
+        Return handle to Jupyter notebook session for specified notebook directory.
 
-        If an IPython notebook session has already been launched for the
-        notebook directory, reuse it.  Otherwise, launch a new IPython notebook
+        If a Jupyter notebook session has already been launched for the
+        notebook directory, reuse it.  Otherwise, launch a new Jupyter notebook
         session.
 
         By default, notebook session is launched using current working
@@ -308,7 +308,7 @@ class SessionManager(object):
         Parameters
         ----------
         notebook_dir : str, optional
-            Directory to start IPython notebook session in.
+            Directory to start Jupyter notebook session in.
         no_browser : bool, optional
             Do not launch new browser tab (default: ``True``).
         **kwargs : dict
@@ -317,7 +317,7 @@ class SessionManager(object):
         Returns
         -------
         Session
-            Handle to IPython session for specified notebook directory.
+            Handle to Jupyter notebook session for specified notebook directory.
 
         See Also
         --------
@@ -333,7 +333,7 @@ class SessionManager(object):
                 session.open()
         else:
             # Notebook process is not running for notebook directory, so
-            # start new IPython notebook process.
+            # start new Jupyter notebook process.
 
             # Use default `daemon` setting for manager if no specified.
             daemon = kwargs.pop('daemon', self.daemon)
