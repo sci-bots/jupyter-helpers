@@ -16,7 +16,7 @@ setup(name='jupyter-helpers',
       author_email='christian@fobel.net',
       url='https://github.com/sci-bots/jupyter-helpers',
       license='BSD',
-      install_requires=['notebook', 'jupyter', 'path_helpers>=0.2'],
+      install_requires=['notebook', 'jupyter', 'path_helpers>=0.2', 'psutil'],
       packages=['jupyter_helpers'])
 
 @task

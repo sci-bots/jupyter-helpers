@@ -4,12 +4,39 @@ from collections import OrderedDict
 from subprocess import Popen, PIPE
 from threading import Thread
 import os
+import psutil
 import re
 import sys
 import time
 import webbrowser
 
 from path_helpers import path
+
+
+def kill_process_tree(pid, including_parent=True):
+    '''
+    Cross-platform function to kill a parent process and all child processes.
+
+    Based on from `subprocess: deleting child processes in Windows <https://stackoverflow.com/a/4229404/345236>`_
+
+    Parameters
+    ----------
+    pid : int
+        Process ID of parent process.
+    including_parent : bool, optional
+        If ``True``, also kill parent process.
+
+
+    .. versionadded:: X.X.X
+    '''
+    parent = psutil.Process(pid)
+    children = parent.children(recursive=True)
+    for child in children:
+        child.kill()
+    gone, still_alive = psutil.wait_procs(children, timeout=5)
+    if including_parent:
+        parent.kill()
+        parent.wait(5)
 
 
 class Session(object):
@@ -195,9 +222,14 @@ class Session(object):
     def stop(self):
         '''
         Kill the notebook server process, if running.
+
+
+        .. versionchanged:: X.X.X
+            Use :func:`kill_process_tree` to ensure notebook server process and
+            _all child processes_ are stopped.
         '''
         if self.daemon and self.process is not None:
-            self.process.kill()
+            kill_process_tree(self.process.pid)
             self.process = None
             self.thread = None
 

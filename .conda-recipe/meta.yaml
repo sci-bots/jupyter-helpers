@@ -17,12 +17,14 @@ requirements:
     - notebook
     - path_helpers >=0.2
     - paver
+    - psutil
     - python
 
   run:
     - jupyter
     - notebook
     - path_helpers >=0.2
+    - psutil
     - python
 
 # source will be downloaded prior to filling in jinja templates
