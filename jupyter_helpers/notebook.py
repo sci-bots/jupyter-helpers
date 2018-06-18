@@ -94,6 +94,11 @@ class Session(object):
 
 
         .. versionchanged:: X.X.X
+            Check ``PYTHONEXEPATH`` environment variable for explicit path to
+            Python executable.  Useful, e.g., when running from a Py2Exe
+            application where an alternate ``.exe`` file should be used to
+            launch the notebook server.
+
             Modify the server URL regular expression to match the following
             server output format:
 
@@ -108,7 +113,8 @@ class Session(object):
                              ' monitored to determine which port the notebook '
                              'server is running on.')
 
-        args_ = ('%s' % sys.executable, '-m', 'jupyter', 'notebook') + self.args
+        args_ = (os.environ.get('PYTHONEXEPATH', sys.executable),
+                 '-m', 'jupyter', 'notebook') + self.args
         args_ = args_ + tuple(args)
 
         # Launch notebook as a subprocess and read stderr in a new thread.
