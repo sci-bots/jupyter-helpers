@@ -1,10 +1,11 @@
+{% if GIT_DESCRIBE_NUMBER > '0' %}
+{% set GIT_VERSION = GIT_DESCRIBE_TAG[1:] + '.post' + GIT_DESCRIBE_NUMBER %}
+{% else %}
+{% set GIT_VERSION = GIT_DESCRIBE_TAG[1:] %}
+{% endif %}
 package:
   name: jupyter-helpers
-{% if GIT_DESCRIBE_NUMBER > '0' %}
-  version: {{ GIT_DESCRIBE_TAG[1:] }}+{{ GIT_DESCRIBE_NUMBER }}
-{% else %}
-  version: {{ GIT_DESCRIBE_TAG[1:] }}
-{% endif %}
+  version: {{ GIT_VERSION }}
 
 build:
   # If this is a new build for the same version, increment the build
@@ -16,7 +17,6 @@ requirements:
     - jupyter
     - notebook
     - path_helpers >=0.2
-    - paver
     - psutil
     - python
 

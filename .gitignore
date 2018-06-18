@@ -3,6 +3,5 @@ RELEASE-VERSION
 MANIFEST
 dist
 build
-setup.py
 paver-minilib.zip
 *.egg-info
