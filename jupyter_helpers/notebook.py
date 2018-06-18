@@ -4,12 +4,39 @@ from collections import OrderedDict
 from subprocess import Popen, PIPE
 from threading import Thread
 import os
+import psutil
 import re
 import sys
 import time
 import webbrowser
 
 from path_helpers import path
+
+
+def kill_process_tree(pid, including_parent=True):
+    '''
+    Cross-platform function to kill a parent process and all child processes.
+
+    Based on from `subprocess: deleting child processes in Windows <https://stackoverflow.com/a/4229404/345236>`_
+
+    Parameters
+    ----------
+    pid : int
+        Process ID of parent process.
+    including_parent : bool, optional
+        If ``True``, also kill parent process.
+
+
+    .. versionadded:: 0.11
+    '''
+    parent = psutil.Process(pid)
+    children = parent.children(recursive=True)
+    for child in children:
+        child.kill()
+    gone, still_alive = psutil.wait_procs(children, timeout=5)
+    if including_parent:
+        parent.kill()
+        parent.wait(5)
 
 
 class Session(object):
@@ -64,13 +91,30 @@ class Session(object):
 
         By default, notebook server is launched using current working directory
         as the notebook directory.
+
+
+        .. versionchanged:: 0.11
+            Check ``PYTHONEXEPATH`` environment variable for explicit path to
+            Python executable.  Useful, e.g., when running from a Py2Exe
+            application where an alternate ``.exe`` file should be used to
+            launch the notebook server.
+
+            Modify the server URL regular expression to match the following
+            server output format:
+
+                [I 13:03:10.907 NotebookApp] The Jupyter Notebook is running at:
+                [I 13:03:10.907 NotebookApp] http://localhost:8888/?token=<...>
+
+            Note that the text "The ... Notebook is running at:" is no longer
+            output on the same line as the server URL.
         '''
         if 'stderr' in kwargs:
             raise ValueError('`stderr` must not be specified, since it must be'
                              ' monitored to determine which port the notebook '
                              'server is running on.')
 
-        args_ = ('%s' % sys.executable, '-m', 'jupyter', 'notebook') + self.args
+        args_ = (os.environ.get('PYTHONEXEPATH', sys.executable),
+                 '-m', 'jupyter', 'notebook') + self.args
         args_ = args_ + tuple(args)
 
         # Launch notebook as a subprocess and read stderr in a new thread.
@@ -91,8 +135,7 @@ class Session(object):
         self._notebook_dir = os.getcwd()
 
         # Determine which port the notebook is running on.
-        cre_address = re.compile(r'The \w+ Notebook is running at: '
-                                 r'(?P<address>https?://.*?:'
+        cre_address = re.compile(r'(?P<address>https?://.*?:'
                                  r'(?P<port>\d+)/)\?token=(?P<token>[a-z0-9]+)\r?$')
         cre_notebook_dir = re.compile(r'Serving notebooks from local '
                                       r'directory:\s+(?P<notebook_dir>[^\r]*)\r?$')
@@ -195,9 +238,14 @@ class Session(object):
     def stop(self):
         '''
         Kill the notebook server process, if running.
+
+
+        .. versionchanged:: 0.11
+            Use :func:`kill_process_tree` to ensure notebook server process and
+            _all child processes_ are stopped.
         '''
         if self.daemon and self.process is not None:
-            self.process.kill()
+            kill_process_tree(self.process.pid)
             self.process = None
             self.thread = None
 
@@ -247,7 +295,7 @@ class SessionManager(object):
                              overwrite=False, output_name=None,
                              create_dir=False, no_browser=False, **kwargs):
         '''
-        Launch a copy of the specified `.ipynb` (template) file in a Jupyter 
+        Launch a copy of the specified `.ipynb` (template) file in a Jupyter
         notebook session for the specified notebook directory.
 
         If a Jupyter notebook session has already been launched for the
@@ -264,6 +312,8 @@ class SessionManager(object):
         overwrite : bool, optional
             If ``True``, overwrite existing file in ``notebook_dir``, if
             necessary.
+        output_name : str, optional
+            Name of notebook file (defaults to the name as the template file).
         create_dir : bool, optional
             If ``True``, create notebook directory, if necessary.
         no_browser : bool, optional

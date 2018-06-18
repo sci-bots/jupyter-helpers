@@ -1,3 +1,3 @@
-include RELEASE-VERSION
-include version.py
 include LICENSE.txt
+include versioneer.py
+include jupyter_helpers/_version.py
