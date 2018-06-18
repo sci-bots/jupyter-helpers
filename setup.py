@@ -5,17 +5,12 @@ from __future__ import print_function
 
 from setuptools import setup
 
-import os
-import sys
-
-# add the current directory as the first listing on the python path
-# so that we import the correct version.py
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-import version
+import versioneer
 
 
 setup(name='jupyter-helpers',
-      version=version.getVersion(),
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       author='Christian Fobel',
       author_email='christian@fobel.net',
       url='https://github.com/sci-bots/jupyter-helpers',

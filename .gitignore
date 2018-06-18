@@ -1,7 +1,5 @@
 *.pyc
-RELEASE-VERSION
 MANIFEST
 dist
 build
-paver-minilib.zip
 *.egg-info
