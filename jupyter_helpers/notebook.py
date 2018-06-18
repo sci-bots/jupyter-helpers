@@ -27,7 +27,7 @@ def kill_process_tree(pid, including_parent=True):
         If ``True``, also kill parent process.
 
 
-    .. versionadded:: X.X.X
+    .. versionadded:: 0.11
     '''
     parent = psutil.Process(pid)
     children = parent.children(recursive=True)
@@ -93,7 +93,7 @@ class Session(object):
         as the notebook directory.
 
 
-        .. versionchanged:: X.X.X
+        .. versionchanged:: 0.11
             Check ``PYTHONEXEPATH`` environment variable for explicit path to
             Python executable.  Useful, e.g., when running from a Py2Exe
             application where an alternate ``.exe`` file should be used to
@@ -240,7 +240,7 @@ class Session(object):
         Kill the notebook server process, if running.
 
 
-        .. versionchanged:: X.X.X
+        .. versionchanged:: 0.11
             Use :func:`kill_process_tree` to ensure notebook server process and
             _all child processes_ are stopped.
         '''
@@ -295,7 +295,7 @@ class SessionManager(object):
                              overwrite=False, output_name=None,
                              create_dir=False, no_browser=False, **kwargs):
         '''
-        Launch a copy of the specified `.ipynb` (template) file in a Jupyter 
+        Launch a copy of the specified `.ipynb` (template) file in a Jupyter
         notebook session for the specified notebook directory.
 
         If a Jupyter notebook session has already been launched for the
