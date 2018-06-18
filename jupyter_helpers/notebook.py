@@ -91,6 +91,17 @@ class Session(object):
 
         By default, notebook server is launched using current working directory
         as the notebook directory.
+
+
+        .. versionchanged:: X.X.X
+            Modify the server URL regular expression to match the following
+            server output format:
+
+                [I 13:03:10.907 NotebookApp] The Jupyter Notebook is running at:
+                [I 13:03:10.907 NotebookApp] http://localhost:8888/?token=<...>
+
+            Note that the text "The ... Notebook is running at:" is no longer
+            output on the same line as the server URL.
         '''
         if 'stderr' in kwargs:
             raise ValueError('`stderr` must not be specified, since it must be'
@@ -118,8 +129,7 @@ class Session(object):
         self._notebook_dir = os.getcwd()
 
         # Determine which port the notebook is running on.
-        cre_address = re.compile(r'The \w+ Notebook is running at: '
-                                 r'(?P<address>https?://.*?:'
+        cre_address = re.compile(r'(?P<address>https?://.*?:'
                                  r'(?P<port>\d+)/)\?token=(?P<token>[a-z0-9]+)\r?$')
         cre_notebook_dir = re.compile(r'Serving notebooks from local '
                                       r'directory:\s+(?P<notebook_dir>[^\r]*)\r?$')
